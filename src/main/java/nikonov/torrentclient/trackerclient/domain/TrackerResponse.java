@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import nikonov.torrentclient.domain.PeerAddress;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +18,7 @@ public class TrackerResponse {
     private Integer interval;
     private Integer leechers;
     private Integer seeders;
+    private String trackerId;
     private List<PeerAddress> peerAddresses;
 
     public List<PeerAddress> getPeerAddresses() {

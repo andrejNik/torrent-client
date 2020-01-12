@@ -1,6 +1,6 @@
 package nikonov.torrentclient.trackerclient;
 
-import nikonov.torrentclient.metadata.domain.metadata.TrackerProtocol;
+import nikonov.torrentclient.domain.PeerAddress;
 import nikonov.torrentclient.trackerclient.domain.*;
 import nikonov.torrentclient.trackerclient.domain.udp.PackageType;
 
@@ -13,32 +13,29 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.function.Function;
 
+/**
+ * TODO tracker id в ответ ?
+ */
+public class UDPTrackerClient extends TrackerClient {
 
-public class UDPTrackerClient implements TrackerClient {
-
-    private final long PROTOCOL_ID = 0x41727101980L;
-    private final int ANNOUNCE_RESPONSE_PACKET_SIZE = 20 + 6 * 50;
-    private final int CONNECT_RESPONSE_PACKET_SIZE = 16;
-
-    @Override
-    public boolean isSupport(TrackerProtocol protocol) {
-        return protocol == TrackerProtocol.UDP;
-    }
+    public final long PROTOCOL_ID = 0x41727101980L;
+    public final int ANNOUNCE_RESPONSE_PACKET_SIZE = 20 + 6 * 50;
+    public final int CONNECT_RESPONSE_PACKET_SIZE = 16;
 
     @Override
     public TrackerResponse request(TrackerRequest request) {
         try {
             var transactionId = new Random().nextInt();
-            var connectionId = request(
+            var connectionId = sendRequestAndGetAnswerOrNull(
                     connectPacket(transactionId, request),
-                    packet -> packetConnectionId(packet, transactionId), CONNECT_RESPONSE_PACKET_SIZE);
+                    packet -> connectionIdFromPacket(packet, transactionId), CONNECT_RESPONSE_PACKET_SIZE);
             if (connectionId != null) {
-                return request(
+                return sendRequestAndGetAnswerOrNull(
                         announcePacket(connectionId, transactionId, request),
-                        packet -> packetTrackerResponse(packet, transactionId), ANNOUNCE_RESPONSE_PACKET_SIZE);
+                        packet -> trackerResponseFromPacket(packet, transactionId), ANNOUNCE_RESPONSE_PACKET_SIZE);
             }
-        } catch (Throwable exp) {
-            throw new RuntimeException(exp);
+        } catch (Throwable ignore) {
+            // TODO логирование
         }
         return null;
     }
@@ -46,7 +43,7 @@ public class UDPTrackerClient implements TrackerClient {
     /**
      * Получить TrackerResponse из пакета или null
      */
-    private TrackerResponse packetTrackerResponse(DatagramPacket packet, int transactionId) {
+    private TrackerResponse trackerResponseFromPacket(DatagramPacket packet, int transactionId) {
         if (packet.getData().length > 16) {
             var buffer = ByteBuffer.wrap(packet.getData());
             var action = buffer.getInt();
@@ -58,13 +55,9 @@ public class UDPTrackerClient implements TrackerClient {
                 var peerAddresses = new ArrayList<PeerAddress>();
                 var countPeers = (packet.getData().length - 20) / 6;
                 for(var i = 0; i < countPeers; i++) {
-                    var ip = buffer.getInt();
-                    // FIXME buffer.getShort() возвращает отрицательные числа. возможно потому что в ответах от трекера используется беззнаковые числа
-                    // FIXME правильно ли я тогда получаю ip ?
-                    var port = ByteBuffer.wrap(new byte[] {0x00, 0x00, buffer.get(), buffer.get()}).getInt();
-                    peerAddresses.add(new PeerAddress(intToIpString(ip), port));
+                    peerAddresses.add(peerAddress(buffer));
                 }
-                return new TrackerResponse(interval, leechers, seeders, peerAddresses);
+                return new TrackerResponse(interval, leechers, seeders, null, peerAddresses);
             }
         }
         return null;
@@ -73,7 +66,7 @@ public class UDPTrackerClient implements TrackerClient {
     /**
      * Получить connectionId из пакета или null
      */
-    private Long packetConnectionId(DatagramPacket packet, int transactionId) {
+    private Long connectionIdFromPacket(DatagramPacket packet, int transactionId) {
         if (packet.getData().length == 16) {
             var buffer = ByteBuffer.wrap(packet.getData());
             var actionCode = buffer.getInt();
@@ -137,7 +130,7 @@ public class UDPTrackerClient implements TrackerClient {
      * @param packetToResultFunction функция преобразования ответа
      * @param receivePackageSize     ожидаемый размер пакета с ответом
      */
-    private <T> T request(DatagramPacket sendPacket, Function<DatagramPacket, T> packetToResultFunction, int receivePackageSize) {
+    private <T> T sendRequestAndGetAnswerOrNull(DatagramPacket sendPacket, Function<DatagramPacket, T> packetToResultFunction, int receivePackageSize) {
         try (var socket = new DatagramSocket()) {
             for (var n = 1; n < 3; n++) {
                 socket.setSoTimeout(15 * (int) Math.pow(2, n));
@@ -151,12 +144,8 @@ public class UDPTrackerClient implements TrackerClient {
                 }
             }
         } catch (Throwable ignore) {
-            // TODO Логировать ?
+            // TODO логирование
         }
         return null;
-    }
-
-    private String intToIpString(int ip) {
-        return String.format("%d.%d.%d.%d", (ip >> 24 & 0xff), (ip >> 16 & 0xff), (ip >> 8 & 0xff), (ip & 0xff));
     }
 }

@@ -1,15 +1,16 @@
-package nikonov.torrentclient.trackerclient.domain;
+package nikonov.torrentclient.domain;
 
 import lombok.*;
 
 /**
- * Данные участника раздачи полученные от трекера
+ * Адрес участника раздачи
  */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
+@ToString
 public class PeerAddress {
     private String ip;
     private int port;

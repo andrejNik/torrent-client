@@ -44,4 +44,9 @@ public class Metadata {
         }
         return trackerAnnounces;
     }
+
+    public int countPiece() {
+        var summaryLength = info.getFiles().stream().mapToLong(File::getLength).sum();
+        return (int)(Math.ceil(summaryLength / (double) info.getPieceLength()));
+    }
 }
