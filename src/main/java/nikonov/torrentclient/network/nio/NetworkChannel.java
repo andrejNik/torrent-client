@@ -59,7 +59,7 @@ public class NetworkChannel {
             } while (count > 0);
             for(var messageArray : messageCollector.messages()) {
                 var message = messageDecoder.decode(messageArray);
-                message.setSender(peerAddress); // FIXME
+                message.setSender(peerAddress);
                 eventService.publishEvent(new MessageEvent(peerAddress, message));
             }
             if (count == -1) {
