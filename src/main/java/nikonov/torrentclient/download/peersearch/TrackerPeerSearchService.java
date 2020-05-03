@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import nikonov.torrentclient.domain.DownloadData;
 import nikonov.torrentclient.domain.PeerAddress;
-import nikonov.torrentclient.download.peersearch.PeerSearchService;
+import nikonov.torrentclient.download.peer.PeerService;
 import nikonov.torrentclient.metadata.domain.metadata.TrackerAnnounce;
 import nikonov.torrentclient.metadata.domain.metadata.TrackerProtocol;
 import nikonov.torrentclient.network.NetworkService;
@@ -39,7 +39,7 @@ public class TrackerPeerSearchService implements PeerSearchService {
     private final int port;
     private Event event;
     private volatile boolean run;
-    private final Set<PeerAddress> activePeerSet;
+    private final PeerService peerService;
     private final Set<PeerAddress> discoverPeerSet;
 
     /**
@@ -54,17 +54,18 @@ public class TrackerPeerSearchService implements PeerSearchService {
 
     public TrackerPeerSearchService(NetworkService networkService,
                                     NotificationService notificationService,
+                                    PeerService peerService,
                                     DownloadData downloadData,
                                     PeerIdService peerIdService,
                                     int port) {
         this.networkService = networkService;
         this.notificationService = notificationService;
+        this.peerService = peerService;
         this.downloadData = downloadData;
         this.peerIdService = peerIdService;
         this.port = port;
         this.trackerDataMap = new HashMap<>();
         this.statistics = new Statistics(0, left(), 0);
-        this.activePeerSet = ConcurrentHashMap.newKeySet();
         this.discoverPeerSet = ConcurrentHashMap.newKeySet();
     }
 
@@ -72,7 +73,7 @@ public class TrackerPeerSearchService implements PeerSearchService {
     public void start() {
         run = true;
         while (run) {
-            if (activePeerSet.size() < MIN_ACTIVE_PEERS) {
+            if (activePeers() < MIN_ACTIVE_PEERS) {
                 var newPeers = searchPeers()
                         .stream()
                         .filter(address -> !discoverPeerSet.contains(address))
@@ -97,16 +98,6 @@ public class TrackerPeerSearchService implements PeerSearchService {
     }
 
     @Override
-    public void activePeer(PeerAddress peerAddress) {
-        activePeerSet.add(peerAddress);
-    }
-
-    @Override
-    public void inactivePeer(PeerAddress peerAddress) {
-        activePeerSet.remove(peerAddress);
-    }
-
-    @Override
     public void pieceDownload(int pieceLength) {
         statistics.downloaded += pieceLength;
     }
@@ -119,6 +110,14 @@ public class TrackerPeerSearchService implements PeerSearchService {
     @Override
     public void complete() {
 
+    }
+
+    private int activePeers() {
+        return (int) peerService
+                .peers()
+                .stream()
+                .filter(peer -> peer.isAmInterested() && !peer.isChoking())
+                .count();
     }
 
     private Set<PeerAddress> searchPeers() {

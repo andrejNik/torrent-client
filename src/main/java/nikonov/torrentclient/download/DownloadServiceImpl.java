@@ -4,32 +4,34 @@ import com.google.common.hash.Hashing;
 import nikonov.torrentclient.domain.*;
 import nikonov.torrentclient.download.domain.DownloadBlock;
 import nikonov.torrentclient.download.domain.PeerBlockRequest;
-import nikonov.torrentclient.download.domain.Peer;
 import nikonov.torrentclient.download.domain.PieceByteBlock;
+import nikonov.torrentclient.download.peer.PeerService;
 import nikonov.torrentclient.download.strategy.DownloadAlgorithm;
 import nikonov.torrentclient.filestorage.PieceConsumerService;
 import nikonov.torrentclient.metadata.domain.metadata.File;
 import nikonov.torrentclient.network.NetworkService;
 import nikonov.torrentclient.network.domain.message.*;
 import nikonov.torrentclient.util.DomainUtil;
-import nikonov.torrentclient.util.PeerIdService;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-
+/**
+ * TODO 1. выделить сервис кеша кусков
+ * TODO 2. парралельная загрузка и блокировка по индексу куска
+ *
+ */
 public class DownloadServiceImpl implements DownloadService {
 
     private final NetworkService networkService;
     private final PieceConsumerService pieceConsumerService;
     private final Set<DownloadBlock> downloadBlocks;
     private final Map<Integer, Set<PieceByteBlock>> pieceBlockMap;
-    private final Map<PeerAddress, Peer> peerMap;
     private DownloadAlgorithm downloadAlgorithm;
+    private final PeerService peerService;
     private final Bitfield bitfield;
     private final DownloadData downloadData;
-    private final PeerIdService peerIdService;
 
     public static final int BLOCK_LENGTH = (int) Math.pow(2, 14);
 
@@ -40,19 +42,21 @@ public class DownloadServiceImpl implements DownloadService {
 
     public DownloadServiceImpl(NetworkService networkService,
                                PieceConsumerService pieceConsumerService,
+                               PeerService peerService,
                                DownloadAlgorithm downloadAlgorithm,
-                               DownloadData downloadData,
-                               PeerIdService peerIdService) {
+                               DownloadData downloadData) {
         this.networkService = networkService;
         this.pieceConsumerService = pieceConsumerService;
+        this.peerService = peerService;
         this.downloadData = downloadData;
         this.downloadBlocks = downloadBlockSet();
+        // FIXME возможно стоит заменить на паттерн посредник (между сервисом загрузки и сервисом  пиров)
+        peerService.downloadPieceIndexes(downloadBlocks.stream().map(DownloadBlock::getIndex).collect(Collectors.toSet()));
         this.pieceBlockMap = new ConcurrentHashMap<>();
-        this.peerMap = new ConcurrentHashMap<>();
         this.downloadAlgorithm = downloadAlgorithm;
         this.bitfield = new Bitfield(downloadData.getMetadata().countPiece());
-        this.peerIdService = peerIdService;
     }
+
 
     @Override
     public void download() {
@@ -62,62 +66,6 @@ public class DownloadServiceImpl implements DownloadService {
                 Thread.sleep(REQUEST_FREQUENCY);
             } catch (InterruptedException exp) {
                 throw new RuntimeException(exp);
-            }
-        }
-    }
-
-    @Override
-    public void connect(PeerAddress peerAddress) {
-        networkService.send(handshakeMessage(peerAddress));
-    }
-
-    @Override
-    public void disconnect(PeerAddress peerAddress) {
-        peerMap.remove(peerAddress);
-    }
-
-    @Override
-    public void bitfieldMessage(BitfieldMessage message) {
-        var peerBitfield = message.getBitfield();
-        var sender = message.getSender();
-        var peer = peerMap.get(sender);
-        if (peer != null) {
-            peer.setBitfield(peerBitfield);
-            if (interest(peer)) {
-                peer.setAmInterested(true);
-                networkService.send(new InterestedMessage(sender));
-            }
-        }
-    }
-
-    @Override
-    public void chokeMessage(ChokeMessage chokeMessage) {
-        var sender = chokeMessage.getSender();
-        var peer = peerMap.get(sender);
-        if (peer != null) {
-            peer.setChoking(true);
-        }
-    }
-
-    @Override
-    public void handshake(HandshakeMessage message) {
-        var sender = message.getSender();
-        if (Arrays.equals(downloadData.getMetadata().getInfo().getSha1Hash(), message.getInfoHash())) {
-            var peer = new Peer(sender);
-            peerMap.put(sender, peer);
-            //networkService.send(bitfieldMessage(sender));
-        }
-    }
-
-    @Override
-    public void haveMessage(HaveMessage message) {
-        var sender = message.getSender();
-        var peer = peerMap.get(sender);
-        if (peer != null) {
-            peer.getBitfield().have(message.getPieceIndex());
-            if (interest(peer) && !peer.isAmInterested()) {
-                peer.setAmInterested(true);
-                networkService.send(new InterestedMessage(sender));
             }
         }
     }
@@ -153,6 +101,7 @@ public class DownloadServiceImpl implements DownloadService {
             if (Arrays.equals(Hashing.sha1().hashBytes(piece).asBytes(), downloadData.getMetadata().getInfo().getPieceHashes()[message.getIndex()])) {
                 bitfield.have(message.getIndex());
                 pieceConsumerService.apply(message.getIndex(), piece);
+                peerService.pieceDownload(message.getIndex());
                 result = true;
                 // TODO ПОСЛАТЬ ПИРАМ HAVE СООБЩЕНИЕ
                 // TODO ПОСЛЕ ЗАГРУЗКИ КУСКА КЛИЕНТ МОЖЕТ НЕ ИНТЕРЕСОВАТСЯ ОПРЕДЕЛЕННЫМИ ПИРАМИ - ПОСЫЛАТЬ NOT INTERESTED СООБЩЕНИЕ ?
@@ -169,21 +118,9 @@ public class DownloadServiceImpl implements DownloadService {
         return result;
     }
 
-    @Override
-    public void unchokeMessage(UnchokeMessage unchokeMessage) {
-        var sender = unchokeMessage.getSender();
-        var peer = peerMap.get(sender);
-        if (peer != null) {
-            peer.setChoking(false);
-        }
-    }
-
     private void downloadBlocks() {
-        for (var downloadBlock : downloadAlgorithm.downloadBlock(downloadBlocks, peerMap.values())) {
-            var peer = peerMap.get(downloadBlock.getAddress());
-            if (peer != null) {
-                networkService.send(requestMessage(downloadBlock));
-            }
+        for (var downloadBlock : downloadAlgorithm.downloadBlock(downloadBlocks, peerService.peers())) {
+            networkService.send(requestMessage(downloadBlock));
         }
     }
 
@@ -195,22 +132,6 @@ public class DownloadServiceImpl implements DownloadService {
         message.setLength(peerBlockRequest.getBlock().getLength());
         return message;
     }
-
-    private HandshakeMessage handshakeMessage(PeerAddress recipient) {
-        var message = new HandshakeMessage();
-        message.setRecipient(recipient);
-        message.setInfoHash(downloadData.getMetadata().getInfo().getSha1Hash());
-        message.setPeerId(peerIdService.peerId());
-        return message;
-    }
-
-    private BitfieldMessage bitfieldMessage(PeerAddress recipient) {
-        var message = new BitfieldMessage();
-        message.setBitfield(bitfield);
-        message.setRecipient(recipient);
-        return message;
-    }
-
 
     private Set<DownloadBlock> downloadBlockSet() {
         var map = new HashMap<Integer, List<DownloadBlock>>();
@@ -259,17 +180,5 @@ public class DownloadServiceImpl implements DownloadService {
             list.add(new DownloadBlock(pieceIndex, begin, length));
         }
         return list;
-    }
-
-    /**
-     * Интересен ли пир
-     */
-    private boolean interest(Peer peer) {
-        for (var downloadBlock : downloadBlocks) {
-            if (peer.getBitfield().isHave(downloadBlock.getIndex())) {
-                return true;
-            }
-        }
-        return false;
     }
 }

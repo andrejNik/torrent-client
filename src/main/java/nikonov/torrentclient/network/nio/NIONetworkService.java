@@ -80,7 +80,7 @@ public class NIONetworkService implements NetworkService {
     }
 
     /**
-     * Есть проблема с подключением в неблокирующем режиме, поэтому как временное решение используется блокирующее подключение
+     * FIXME Есть проблема с подключением в неблокирующем режиме, поэтому как временное решение используется блокирующее подключение
      * https://stackoverflow.com/questions/6540346/java-solaris-nio-op-connect-problem
      */
     @Override
@@ -100,6 +100,15 @@ public class NIONetworkService implements NetworkService {
                 // TODO логирование
             }
         });
+    }
+
+    @Override
+    public void disconnect(PeerAddress peerAddress) {
+        if (channelMap.containsKey(peerAddress)) {
+            var channel = channelMap.get(peerAddress);
+            channel.close();
+            channelMap.remove(peerAddress);
+        }
     }
 
     @Override

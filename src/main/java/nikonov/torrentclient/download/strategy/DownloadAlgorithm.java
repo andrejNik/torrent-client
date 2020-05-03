@@ -1,7 +1,7 @@
 package nikonov.torrentclient.download.strategy;
 
 import nikonov.torrentclient.download.domain.PeerBlockRequest;
-import nikonov.torrentclient.download.domain.Peer;
+import nikonov.torrentclient.download.domain.peer.Peer;
 import nikonov.torrentclient.download.domain.DownloadBlock;
 
 import java.util.Collection;

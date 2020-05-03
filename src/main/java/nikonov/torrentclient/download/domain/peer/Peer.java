@@ -1,10 +1,11 @@
-package nikonov.torrentclient.download.domain;
+package nikonov.torrentclient.download.domain.peer;
 
 import lombok.Getter;
 import lombok.Setter;
 import nikonov.torrentclient.domain.Bitfield;
 import nikonov.torrentclient.domain.PeerAddress;
 
+import java.time.Instant;
 import java.util.Objects;
 
 @Getter
@@ -18,6 +19,9 @@ public class Peer {
 
     private boolean amChoking;
     private boolean amInterested;
+
+    private PeerState state;
+    private Instant lastActiveTime;
 
     public Peer(PeerAddress address) {
         this.address = address;
