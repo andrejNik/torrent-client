@@ -6,6 +6,7 @@ import nikonov.torrentclient.download.domain.DownloadBlock;
 import nikonov.torrentclient.download.domain.PeerBlockRequest;
 import nikonov.torrentclient.download.domain.PieceByteBlock;
 import nikonov.torrentclient.download.peer.PeerService;
+import nikonov.torrentclient.download.piececache.PieceCacheService;
 import nikonov.torrentclient.download.strategy.DownloadAlgorithm;
 import nikonov.torrentclient.filestorage.PieceConsumerService;
 import nikonov.torrentclient.metadata.domain.metadata.File;
@@ -27,9 +28,9 @@ public class DownloadServiceImpl implements DownloadService {
     private final NetworkService networkService;
     private final PieceConsumerService pieceConsumerService;
     private final Set<DownloadBlock> downloadBlocks;
-    private final Map<Integer, Set<PieceByteBlock>> pieceBlockMap;
     private DownloadAlgorithm downloadAlgorithm;
     private final PeerService peerService;
+    private final PieceCacheService pieceCacheService;
     private final Bitfield bitfield;
     private final DownloadData downloadData;
 
@@ -43,16 +44,17 @@ public class DownloadServiceImpl implements DownloadService {
     public DownloadServiceImpl(NetworkService networkService,
                                PieceConsumerService pieceConsumerService,
                                PeerService peerService,
+                               PieceCacheService pieceCacheService,
                                DownloadAlgorithm downloadAlgorithm,
                                DownloadData downloadData) {
         this.networkService = networkService;
         this.pieceConsumerService = pieceConsumerService;
         this.peerService = peerService;
+        this.pieceCacheService = pieceCacheService;
         this.downloadData = downloadData;
         this.downloadBlocks = downloadBlockSet();
         // FIXME возможно стоит заменить на паттерн посредник (между сервисом загрузки и сервисом  пиров)
         peerService.downloadPieceIndexes(downloadBlocks.stream().map(DownloadBlock::getIndex).collect(Collectors.toSet()));
-        this.pieceBlockMap = new ConcurrentHashMap<>();
         this.downloadAlgorithm = downloadAlgorithm;
         this.bitfield = new Bitfield(downloadData.getMetadata().countPiece());
     }
@@ -79,25 +81,15 @@ public class DownloadServiceImpl implements DownloadService {
         if (bitfield.isHave(message.getIndex())) {
             return result;
         }
-        pieceBlockMap
-                .computeIfAbsent(message.getIndex(), index -> new HashSet<>())
-                .add(new PieceByteBlock(message.getBegin(), message.getBlock()));
+        pieceCacheService.putPieceBlock(
+                message.getIndex(),
+                new PieceByteBlock(message.getBegin(), message.getBlock())
+        );
         downloadBlocks.remove(new DownloadBlock(message.getIndex(), message.getBegin(), message.getBlock().length));
         // fixme можно не перебирать коллекцию а смотреть в pieceBlockMap
         var pieceDownload = downloadBlocks.stream().noneMatch(downloadBlock -> downloadBlock.getIndex() == message.getIndex());
         if (pieceDownload) {
-            var piece = pieceBlockMap
-                    .get(message.getIndex())
-                    .stream()
-                    .sorted(Comparator.comparingInt(PieceByteBlock::getBegin))
-                    .map(PieceByteBlock::getBlock)
-                    .reduce((arr1, arr2) -> {
-                        var union = new byte[arr1.length + arr2.length];
-                        System.arraycopy(arr1, 0, union, 0, arr1.length);
-                        System.arraycopy(arr2, 0, union, arr1.length, arr2.length);
-                        return union;
-                    })
-                    .get();
+            var piece = pieceCacheService.piece(message.getIndex());
             if (Arrays.equals(Hashing.sha1().hashBytes(piece).asBytes(), downloadData.getMetadata().getInfo().getPieceHashes()[message.getIndex()])) {
                 bitfield.have(message.getIndex());
                 pieceConsumerService.apply(message.getIndex(), piece);
@@ -107,13 +99,14 @@ public class DownloadServiceImpl implements DownloadService {
                 // TODO ПОСЛЕ ЗАГРУЗКИ КУСКА КЛИЕНТ МОЖЕТ НЕ ИНТЕРЕСОВАТСЯ ОПРЕДЕЛЕННЫМИ ПИРАМИ - ПОСЫЛАТЬ NOT INTERESTED СООБЩЕНИЕ ?
             } else { // кусок скачан с ошибкой - начинаем скачивать заново
                 downloadBlocks.addAll(
-                        pieceBlockMap
-                                .get(message.getIndex())
+                        // TODO ЛУЧШЕ ИСПОЛЬЗОВАТЬ splitPiece
+                        pieceCacheService
+                                .pieceByteBlocks(message.getIndex())
                                 .stream()
                                 .map(pieceByteBlock -> new DownloadBlock(message.getIndex(), pieceByteBlock.getBegin(), pieceByteBlock.getBlock().length))
                                 .collect(Collectors.toList()));
             }
-            pieceBlockMap.remove(message.getIndex());
+            pieceCacheService.removePiece(message.getIndex());
         }
         return result;
     }
