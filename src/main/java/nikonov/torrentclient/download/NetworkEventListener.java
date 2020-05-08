@@ -1,5 +1,6 @@
 package nikonov.torrentclient.download;
 
+import nikonov.torrentclient.domain.PeerAddress;
 import nikonov.torrentclient.download.peer.PeerService;
 import nikonov.torrentclient.download.peersearch.PeerSearchService;
 import nikonov.torrentclient.event.EventListener;
@@ -32,12 +33,7 @@ public class NetworkEventListener implements EventListener {
     public void handleEvent(Object event) {
         if (event instanceof ConnectToPeerEvent) {
             var address = ((ConnectToPeerEvent)event).getPeerAddress();
-            peerService.connect(address);
-            notificationService.notice(new Notification<>(
-                    NetworkEventListener.class,
-                    NotificationType.SEND_HANDSHAKE_MESSAGE,
-                    new Object[]{address.getIp(), address.getPort()})
-            );
+            handleConnectToPeer(address);
         }
 
         if (event instanceof DisconnectEvent) {
@@ -55,22 +51,12 @@ public class NetworkEventListener implements EventListener {
 
             if (messageEvent.getMessage() instanceof ChokeMessage) {
                 var chokeMessage = (ChokeMessage)messageEvent.getMessage();
-                peerService.chokeMessage(chokeMessage);
-                notificationService.notice(new Notification<>(
-                        NetworkEventListener.class,
-                        NotificationType.RECEIVE_CHOKE_MESSAGE,
-                        new Object[]{chokeMessage.getSender().getIp(), chokeMessage.getSender().getPort()})
-                );
+                handleChokeMessage(chokeMessage);
             }
 
             if (messageEvent.getMessage() instanceof HandshakeMessage) {
                 var handshakeMessage = (HandshakeMessage)messageEvent.getMessage();
-                peerService.handshakeMessage(handshakeMessage);
-                notificationService.notice(new Notification<>(
-                        NetworkEventListener.class,
-                        NotificationType.RECEIVE_HANDSHAKE_MESSAGE,
-                        new Object[]{handshakeMessage.getSender().getIp(), handshakeMessage.getSender().getPort()})
-                );
+                handleHandshakeMessage(handshakeMessage);
             }
 
             if (messageEvent.getMessage() instanceof HaveMessage) {
@@ -80,31 +66,66 @@ public class NetworkEventListener implements EventListener {
 
             if (messageEvent.getMessage() instanceof PieceMessage) {
                 var pieceMessage = (PieceMessage)messageEvent.getMessage();
-                var pieceDownload = downloadService.pieceMessage(pieceMessage);
-                notificationService.notice(new Notification<>(
-                    NetworkEventListener.class,
-                    NotificationType.RECEIVE_PIECE_MESSAGE,
-                    new Object[]{pieceMessage.getSender().getIp(), pieceMessage.getSender().getPort(), pieceMessage.getIndex(), pieceMessage.getBegin()})
-                );
-                if (pieceDownload) {
-                    peerSearchService.pieceDownload(pieceMessage.getBlock().length);
-                    notificationService.notice(new Notification<>(
-                            NetworkEventListener.class,
-                            NotificationType.PIECE_DOWNLOAD,
-                            new Object[]{pieceMessage.getIndex()})
-                    );
-                }
+                handlePieceMessage(pieceMessage);
             }
 
             if (messageEvent.getMessage() instanceof UnchokeMessage) {
                 var unchokeMessage = (UnchokeMessage)messageEvent.getMessage();
-                peerService.unchokeMessage(unchokeMessage);
-                notificationService.notice(new Notification<>(
-                        NetworkEventListener.class,
-                        NotificationType.RECEIVE_UNCHOKE_MESSAGE,
-                        new Object[]{unchokeMessage.getSender().getIp(), unchokeMessage.getSender().getPort()})
-                );
+                handleUnchokeMessage(unchokeMessage);
             }
         }
+    }
+
+    private void handleConnectToPeer(PeerAddress address) {
+        peerService.connect(address);
+        notificationService.notice(new Notification<>(
+                NetworkEventListener.class,
+                NotificationType.SEND_HANDSHAKE_MESSAGE,
+                new Object[]{address.getIp(), address.getPort()})
+        );
+    }
+
+    private void handleChokeMessage(ChokeMessage chokeMessage) {
+        peerService.chokeMessage(chokeMessage);
+        notificationService.notice(new Notification<>(
+                NetworkEventListener.class,
+                NotificationType.RECEIVE_CHOKE_MESSAGE,
+                new Object[]{chokeMessage.getSender().getIp(), chokeMessage.getSender().getPort()})
+        );
+    }
+
+    private void handleHandshakeMessage(HandshakeMessage handshakeMessage) {
+        peerService.handshakeMessage(handshakeMessage);
+        notificationService.notice(new Notification<>(
+                NetworkEventListener.class,
+                NotificationType.RECEIVE_HANDSHAKE_MESSAGE,
+                new Object[]{handshakeMessage.getSender().getIp(), handshakeMessage.getSender().getPort()})
+        );
+    }
+
+    private void handlePieceMessage(PieceMessage pieceMessage) {
+        var pieceDownload = downloadService.pieceMessage(pieceMessage);
+        notificationService.notice(new Notification<>(
+                NetworkEventListener.class,
+                NotificationType.RECEIVE_PIECE_MESSAGE,
+                new Object[]{pieceMessage.getSender().getIp(), pieceMessage.getSender().getPort(), pieceMessage.getIndex(), pieceMessage.getBegin()})
+        );
+        if (pieceDownload) {
+            peerSearchService.pieceDownload(pieceMessage.getBlock().length);
+            notificationService.notice(new Notification<>(
+                    NetworkEventListener.class,
+                    NotificationType.PIECE_DOWNLOAD,
+                    new Object[]{pieceMessage.getIndex()})
+            );
+        }
+    }
+
+    private void handleUnchokeMessage(UnchokeMessage unchokeMessage) {
+        peerService.unchokeMessage(unchokeMessage);
+        notificationService.notice(new Notification<>(
+                NetworkEventListener.class,
+                NotificationType.RECEIVE_UNCHOKE_MESSAGE,
+                new Object[]{unchokeMessage.getSender().getIp(), unchokeMessage.getSender().getPort()})
+        );
     }
 }
