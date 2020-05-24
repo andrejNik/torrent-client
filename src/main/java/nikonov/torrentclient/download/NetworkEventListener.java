@@ -39,6 +39,7 @@ public class NetworkEventListener implements EventListener {
         if (event instanceof DisconnectEvent) {
             var address = ((DisconnectEvent) event).getPeerAddress();
             peerService.disconnect(address);
+            peerSearchService.disconnect(address);
         }
 
         if (event instanceof MessageEvent) {

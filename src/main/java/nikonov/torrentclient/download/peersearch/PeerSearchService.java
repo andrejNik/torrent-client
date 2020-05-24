@@ -30,4 +30,9 @@ public interface PeerSearchService {
      * загрузка торрента завершена
      */
     void complete();
+
+    /**
+     * Соединенение с пиром закрыто.
+     */
+    void disconnect(PeerAddress peerAddress);
 }

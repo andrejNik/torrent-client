@@ -18,18 +18,22 @@ import nikonov.torrentclient.trackerclient.UDPTrackerClient;
 import nikonov.torrentclient.trackerclient.domain.*;
 import nikonov.torrentclient.util.PeerIdService;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.*;
 
 public class TrackerPeerSearchService implements PeerSearchService {
 
+    private static final Logger logger = Logger.getLogger(TrackerPeerSearchService.class.getName());
+    private static final ResourceBundle resourceBundle = ResourceBundle.getBundle("nikonov.torrentclient.logging.message");
     private final NetworkService networkService;
     private final NotificationService notificationService;
     private final DownloadData downloadData;
@@ -50,7 +54,9 @@ public class TrackerPeerSearchService implements PeerSearchService {
     /**
      * период отправки запросов к трекерам
      */
-    public static final int SEARCH_PERIOD = 5;
+    public static final Duration SEARCH_PERIOD = Duration.of(5, ChronoUnit.SECONDS);
+
+    public static final String THREAD_NAME = "Tracker-Peer-Search-Service-Thread";
 
     public TrackerPeerSearchService(NetworkService networkService,
                                     NotificationService notificationService,
@@ -71,23 +77,17 @@ public class TrackerPeerSearchService implements PeerSearchService {
 
     @Override
     public void start() {
+        Thread.currentThread().setName(THREAD_NAME);
+        Instant lastExecuteTime = null;
         run = true;
         while (run) {
-            if (activePeers() < MIN_ACTIVE_PEERS) {
-                var newPeers = searchPeers()
-                        .stream()
-                        .filter(address -> !discoverPeerSet.contains(address))
-                        .collect(Collectors.toSet());
-                if (newPeers.size() != 0) {
-                    discoverPeerSet.addAll(newPeers);
-                    notificationService.notice(new Notification<>(this.getClass(), NotificationType.NEW_PEERS_DISCOVER, new Object[]{newPeers.size()}));
-                    newPeers.forEach(networkService::connect);
+            if (canExecuteCycleStep(lastExecuteTime)) {
+                try {
+                    searchAndConnectToNewPeersIfNecessary();
+                } catch (Exception exp) {
+                    logger.log(Level.SEVERE, resourceBundle.getString("log.tracker-peer-search.error"), exp);
                 }
-            }
-            try {
-                TimeUnit.SECONDS.sleep(SEARCH_PERIOD);
-            } catch (InterruptedException exp) {
-                throw new RuntimeException(exp);
+                lastExecuteTime = Instant.now();
             }
         }
     }
@@ -110,6 +110,29 @@ public class TrackerPeerSearchService implements PeerSearchService {
     @Override
     public void complete() {
 
+    }
+
+    @Override
+    public void disconnect(PeerAddress peerAddress) {
+        discoverPeerSet.remove(peerAddress);
+    }
+
+    private boolean canExecuteCycleStep(Instant lastExecuteTime) {
+        return lastExecuteTime == null || lastExecuteTime.plus(SEARCH_PERIOD.toSeconds(), ChronoUnit.SECONDS).isBefore(Instant.now());
+    }
+
+    private void searchAndConnectToNewPeersIfNecessary() {
+        if (activePeers() < MIN_ACTIVE_PEERS) {
+            var newPeers = searchPeers()
+                    .stream()
+                    .filter(address -> !discoverPeerSet.contains(address))
+                    .collect(Collectors.toSet());
+            if (newPeers.size() != 0) {
+                discoverPeerSet.addAll(newPeers);
+                notificationService.notice(new Notification<>(this.getClass(), NotificationType.NEW_PEERS_DISCOVER, new Object[]{newPeers.size()}));
+                newPeers.forEach(networkService::connect);
+            }
+        }
     }
 
     private int activePeers() {
