@@ -14,16 +14,23 @@ import nikonov.torrentclient.network.NetworkService;
 import nikonov.torrentclient.network.domain.message.*;
 import nikonov.torrentclient.util.DomainUtil;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * TODO 1. выделить сервис кеша кусков
- * TODO 2. парралельная загрузка и блокировка по индексу куска
- *
+ * TODO 1. парралельная загрузка и блокировка по индексу куска
  */
 public class DownloadServiceImpl implements DownloadService {
+
+    private static final Logger logger = Logger.getLogger(DownloadServiceImpl.class.getName());
+    private static final ResourceBundle resourceBundle = ResourceBundle.getBundle("nikonov.torrentclient.logging.message");
+    private static final String THREAD_NAME = "Download-Service-Thread";
 
     private final NetworkService networkService;
     private final PieceConsumerService pieceConsumerService;
@@ -35,11 +42,10 @@ public class DownloadServiceImpl implements DownloadService {
     private final DownloadData downloadData;
 
     public static final int BLOCK_LENGTH = (int) Math.pow(2, 14);
-
     /**
      * Периодичность отправки запросов пирам
      */
-    public static final int REQUEST_FREQUENCY = 5_000;
+    public static final Duration REQUEST_PERIOD = Duration.of(5, ChronoUnit.SECONDS);
 
     public DownloadServiceImpl(NetworkService networkService,
                                PieceConsumerService pieceConsumerService,
@@ -59,15 +65,19 @@ public class DownloadServiceImpl implements DownloadService {
         this.bitfield = new Bitfield(downloadData.getMetadata().countPiece());
     }
 
-
     @Override
     public void download() {
-        while (!downloadBlocks.isEmpty()) {
-            downloadBlocks();
-            try {
-                Thread.sleep(REQUEST_FREQUENCY);
-            } catch (InterruptedException exp) {
-                throw new RuntimeException(exp);
+        Thread.currentThread().setName(THREAD_NAME);
+        Instant lastExecuteTime = null;
+        while(!downloadBlocks.isEmpty()) {
+            if (canExecuteCycleStep(lastExecuteTime)) {
+                try {
+                    requestBlocks();
+                } catch (Exception exp) {
+                    logger.log(Level.SEVERE, resourceBundle.getString("log.download-piece.request.error"), exp);
+                    System.exit(-1);
+                }
+                lastExecuteTime = Instant.now();
             }
         }
     }
@@ -76,7 +86,7 @@ public class DownloadServiceImpl implements DownloadService {
      * FIXME При вызове метода из разных потоков кусок может быть скачан более одного раза
      */
     @Override
-    public boolean pieceMessage(PieceMessage message) {
+    public synchronized boolean pieceMessage(PieceMessage message) {
         var result = false;
         if (bitfield.isHave(message.getIndex())) {
             return result;
@@ -95,8 +105,6 @@ public class DownloadServiceImpl implements DownloadService {
                 pieceConsumerService.apply(message.getIndex(), piece);
                 peerService.pieceDownload(message.getIndex());
                 result = true;
-                // TODO ПОСЛАТЬ ПИРАМ HAVE СООБЩЕНИЕ
-                // TODO ПОСЛЕ ЗАГРУЗКИ КУСКА КЛИЕНТ МОЖЕТ НЕ ИНТЕРЕСОВАТСЯ ОПРЕДЕЛЕННЫМИ ПИРАМИ - ПОСЫЛАТЬ NOT INTERESTED СООБЩЕНИЕ ?
             } else { // кусок скачан с ошибкой - начинаем скачивать заново
                 downloadBlocks.addAll(
                         // TODO ЛУЧШЕ ИСПОЛЬЗОВАТЬ splitPiece
@@ -111,7 +119,11 @@ public class DownloadServiceImpl implements DownloadService {
         return result;
     }
 
-    private void downloadBlocks() {
+    private boolean canExecuteCycleStep(Instant lastExecuteTime) {
+        return lastExecuteTime == null || lastExecuteTime.plus(REQUEST_PERIOD.toSeconds(), ChronoUnit.SECONDS).isBefore(Instant.now());
+    }
+
+    private void requestBlocks() {
         for (var downloadBlock : downloadAlgorithm.downloadBlock(downloadBlocks, peerService.peers())) {
             networkService.send(requestMessage(downloadBlock));
         }
