@@ -1,5 +1,6 @@
 package nikonov.torrentclient.download.peer;
 
+import nikonov.torrentclient.domain.Bitfield;
 import nikonov.torrentclient.domain.DownloadData;
 import nikonov.torrentclient.domain.PeerAddress;
 import nikonov.torrentclient.download.domain.peer.Peer;
@@ -55,6 +56,7 @@ public class PeerServiceImpl implements PeerService {
         var peer = new Peer(peerAddress);
         peer.setState(PeerState.CONNECT);
         peer.setLastActiveTime(Instant.now());
+        peer.setBitfield(new Bitfield(downloadData.getMetadata().countPiece()));
         peerMap.put(peerAddress, peer);
         networkService.send(handshakeMessage(peerAddress));
     }
@@ -145,6 +147,7 @@ public class PeerServiceImpl implements PeerService {
             if (!interest(peer) && peer.isAmInterested()) {
                 peer.setAmInterested(false);
                 networkService.send(new NotInterestedMessage(peer.getAddress()));
+                // TODO ПОСТАТЬ HAVE-СООБЩЕНИЕ
             }
         }
     }
