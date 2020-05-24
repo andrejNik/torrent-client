@@ -1,4 +1,4 @@
-package nikonov.torrentclient.network.nio;
+package nikonov.torrentclient.network;
 
 import nikonov.torrentclient.network.domain.message.HandshakeMessage;
 import java.nio.ByteBuffer;

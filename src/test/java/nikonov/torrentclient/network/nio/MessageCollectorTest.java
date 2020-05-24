@@ -1,5 +1,6 @@
 package nikonov.torrentclient.network.nio;
 
+import nikonov.torrentclient.network.MessageCollector;
 import nikonov.torrentclient.network.domain.message.HandshakeMessage;
 import org.junit.Assert;
 import org.junit.Before;

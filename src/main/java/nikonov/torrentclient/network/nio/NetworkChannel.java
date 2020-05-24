@@ -2,6 +2,7 @@ package nikonov.torrentclient.network.nio;
 
 import nikonov.torrentclient.domain.PeerAddress;
 import nikonov.torrentclient.event.EventService;
+import nikonov.torrentclient.network.MessageCollector;
 import nikonov.torrentclient.network.MessageDecoder;
 import nikonov.torrentclient.network.MessageEncoder;
 import nikonov.torrentclient.network.domain.event.DisconnectEvent;
