@@ -45,8 +45,28 @@ public class Metadata {
         return trackerAnnounces;
     }
 
+    /**
+     * Суммарная длина файлов торрента
+     */
+    public long summaryLength() {
+        return info.getFiles().stream().mapToLong(File::getLength).sum();
+    }
+
+    /**
+     * Количетсво кусков
+     */
     public int countPiece() {
-        var summaryLength = info.getFiles().stream().mapToLong(File::getLength).sum();
-        return (int)(Math.ceil(summaryLength / (double) info.getPieceLength()));
+        return (int)(Math.ceil(summaryLength() / (double) info.getPieceLength()));
+    }
+
+    /**
+     * Длина куска в байтах
+     *
+     * @param pieceIndex - идентификатор куска
+     */
+    public int pieceLength(int pieceIndex) {
+        var lastPieceLength = (summaryLength() % info.getPieceLength()) == 0 ?
+                info.getPieceLength() : (int) (summaryLength() % info.getPieceLength());
+        return pieceIndex == countPiece() - 1 ? lastPieceLength : info.getPieceLength();
     }
 }

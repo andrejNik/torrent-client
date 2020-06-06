@@ -15,5 +15,5 @@ import nikonov.torrentclient.domain.PeerAddress;
 @AllArgsConstructor
 public class PeerBlockRequest {
     private PeerAddress address;
-    private DownloadBlock block;
+    private Block block;
 }

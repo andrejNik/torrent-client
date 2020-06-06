@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import nikonov.torrentclient.domain.DownloadData;
 import nikonov.torrentclient.domain.PeerAddress;
+import nikonov.torrentclient.download.domain.DownloadState;
 import nikonov.torrentclient.download.peer.PeerService;
 import nikonov.torrentclient.metadata.domain.metadata.TrackerAnnounce;
 import nikonov.torrentclient.metadata.domain.metadata.TrackerProtocol;
@@ -37,9 +38,9 @@ public class TrackerPeerSearchService implements PeerSearchService {
     private final NetworkService networkService;
     private final NotificationService notificationService;
     private final DownloadData downloadData;
+    private final DownloadState downloadState;
     private final PeerIdService peerIdService;
     private final Map<TrackerAnnounce, TrackerData> trackerDataMap;
-    private final Statistics statistics;
     private final int port;
     private Event event;
     private volatile boolean run;
@@ -62,16 +63,17 @@ public class TrackerPeerSearchService implements PeerSearchService {
                                     NotificationService notificationService,
                                     PeerService peerService,
                                     DownloadData downloadData,
+                                    DownloadState downloadState,
                                     PeerIdService peerIdService,
                                     int port) {
         this.networkService = networkService;
         this.notificationService = notificationService;
         this.peerService = peerService;
         this.downloadData = downloadData;
+        this.downloadState = downloadState;
         this.peerIdService = peerIdService;
         this.port = port;
         this.trackerDataMap = new HashMap<>();
-        this.statistics = new Statistics(0, left(), 0);
         this.discoverPeerSet = ConcurrentHashMap.newKeySet();
     }
 
@@ -95,16 +97,6 @@ public class TrackerPeerSearchService implements PeerSearchService {
     @Override
     public void stop() {
         run = false;
-    }
-
-    @Override
-    public void pieceDownload(int pieceLength) {
-        statistics.downloaded += pieceLength;
-    }
-
-    @Override
-    public void pieceUpload(int pieceLength) {
-        statistics.uploaded += pieceLength;
     }
 
     @Override
@@ -183,21 +175,10 @@ public class TrackerPeerSearchService implements PeerSearchService {
         trackerRequest.setClientInfo(new ClientInfo(peerIdService.peerId(), port));
         trackerRequest.setInfoHash(downloadData.getMetadata().getInfo().getSha1Hash());
         trackerRequest.setEvent(event);
-        trackerRequest.setUploaded(statistics.uploaded);
-        trackerRequest.setDownloaded(statistics.downloaded);
-        trackerRequest.setLeft(statistics.left);
+        trackerRequest.setUploaded(0L); // FIXME ПОКА ОТДАЧИ НЕТ
+        trackerRequest.setDownloaded(downloadState.downloaded());
+        trackerRequest.setLeft(downloadState.left());
         return trackerRequest;
-    }
-
-    private long left() {
-        var left = 0L;
-        for (var i = 0; i < downloadData.getMetadata().getInfo().getFiles().size(); i++) {
-            if (downloadData.getFileToDownloadIndexes().contains(i)) {
-                var fileInfo = downloadData.getMetadata().getInfo().getFiles().get(i);
-                left += fileInfo.getLength();
-            }
-        }
-        return left;
     }
 
     @Getter
@@ -217,23 +198,5 @@ public class TrackerPeerSearchService implements PeerSearchService {
          *
          */
         private String trackerId;
-    }
-
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    private static class Statistics {
-        /**
-         * общее число скачанных байт
-         */
-        private long downloaded;
-        /**
-         * сколько клиент еще должен скачать
-         */
-        private long left;
-        /**
-         * общее число отданных байт
-         */
-        private long uploaded;
     }
 }

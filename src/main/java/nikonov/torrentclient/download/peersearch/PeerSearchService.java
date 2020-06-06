@@ -17,16 +17,6 @@ public interface PeerSearchService {
     void stop();
 
     /**
-     * скачан блок указанной длины
-     */
-    void pieceDownload(int pieceLength);
-
-    /**
-     * отдан блок указанной длины
-     */
-    void pieceUpload(int pieceLength);
-
-    /**
      * загрузка торрента завершена
      */
     void complete();

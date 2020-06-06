@@ -2,7 +2,7 @@ package nikonov.torrentclient.download.strategy;
 
 import nikonov.torrentclient.download.domain.PeerBlockRequest;
 import nikonov.torrentclient.download.domain.peer.Peer;
-import nikonov.torrentclient.download.domain.DownloadBlock;
+import nikonov.torrentclient.download.domain.Block;
 
 import java.util.Collection;
 import java.util.List;
@@ -13,5 +13,5 @@ import java.util.List;
  * На выходе список пар вида блок - пир, у которого надо запросить этот блок
  */
 public interface DownloadAlgorithm {
-    List<PeerBlockRequest> downloadBlock(Collection<DownloadBlock> downloadBlocks, Collection<Peer> peers);
+    List<PeerBlockRequest> downloadBlock(Collection<Block> blocks, Collection<Peer> peers);
 }

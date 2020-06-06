@@ -2,22 +2,22 @@ package nikonov.torrentclient.download.strategy;
 
 import nikonov.torrentclient.download.domain.PeerBlockRequest;
 import nikonov.torrentclient.download.domain.peer.Peer;
-import nikonov.torrentclient.download.domain.DownloadBlock;
+import nikonov.torrentclient.download.domain.Block;
 
 import java.util.*;
 
 public class SequentialDownloadAlgorithm implements DownloadAlgorithm {
 
     @Override
-    public List<PeerBlockRequest> downloadBlock(Collection<DownloadBlock> downloadBlocks, Collection<Peer> peers) {
+    public List<PeerBlockRequest> downloadBlock(Collection<Block> blocks, Collection<Peer> peers) {
         var list = new ArrayList<PeerBlockRequest>();
         var limit = peers.stream().filter(peer -> peer.isAmInterested() && !peer.isChoking()).count();
-        var pieceBlockMap = downloadBlocks
+        var pieceBlockMap = blocks
                 .stream()
-                .sorted(Comparator.comparingInt(DownloadBlock::getIndex))
+                .sorted(Comparator.comparingInt(Block::getIndex))
                 .collect(
-                        LinkedHashMap<Integer, List<DownloadBlock>>::new,
-                        (map, downloadBlock) -> map.computeIfAbsent(downloadBlock.getIndex(), index -> new ArrayList<>()).add(downloadBlock),
+                        LinkedHashMap<Integer, List<Block>>::new,
+                        (map, block) -> map.computeIfAbsent(block.getIndex(), index -> new ArrayList<>()).add(block),
                         LinkedHashMap::putAll
                 );
         var usedPeers = new HashSet<>();

@@ -112,7 +112,6 @@ public class NetworkEventListener implements EventListener {
                 new Object[]{pieceMessage.getSender().getIp(), pieceMessage.getSender().getPort(), pieceMessage.getIndex(), pieceMessage.getBegin()})
         );
         if (pieceDownload) {
-            peerSearchService.pieceDownload(pieceMessage.getBlock().length);
             notificationService.notice(new Notification<>(
                     NetworkEventListener.class,
                     NotificationType.PIECE_DOWNLOAD,

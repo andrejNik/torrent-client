@@ -4,7 +4,6 @@ import nikonov.torrentclient.domain.PeerAddress;
 import nikonov.torrentclient.download.domain.peer.Peer;
 import nikonov.torrentclient.network.domain.message.*;
 
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -46,12 +45,6 @@ public interface PeerService {
      * пир прислал have сообщение
      */
     void haveMessage(HaveMessage haveMessage);
-
-    /**
-     * установить список кусков, которые надо загрузить
-     */
-    void downloadPieceIndexes(Collection<Integer> indexes);
-
     /**
      * оповестить сервис о том что кусок скачан
      */

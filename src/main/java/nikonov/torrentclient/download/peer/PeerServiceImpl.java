@@ -3,6 +3,8 @@ package nikonov.torrentclient.download.peer;
 import nikonov.torrentclient.domain.Bitfield;
 import nikonov.torrentclient.domain.DownloadData;
 import nikonov.torrentclient.domain.PeerAddress;
+import nikonov.torrentclient.download.domain.DownloadState;
+import nikonov.torrentclient.download.domain.Block;
 import nikonov.torrentclient.download.domain.peer.Peer;
 import nikonov.torrentclient.download.domain.peer.PeerState;
 import nikonov.torrentclient.network.NetworkService;
@@ -21,9 +23,8 @@ public class PeerServiceImpl implements PeerService {
     private final NetworkService networkService;
     private final PeerIdService peerIdService;
     private final DownloadData downloadData;
+    private final DownloadState downloadState;
     private final Map<PeerAddress, Peer> peerMap;
-    private final Set<Integer> downloadIndexPieceSet;
-
     /**
      * Время ожидания перехода из состояния CONNECT в состояние ACTIVE
      * Пир при подключении находится в состояний CONNECT.
@@ -33,12 +34,13 @@ public class PeerServiceImpl implements PeerService {
 
     public PeerServiceImpl(NetworkService networkService,
                            PeerIdService peerIdService,
-                           DownloadData downloadData) {
+                           DownloadData downloadData,
+                           DownloadState downloadState) {
         this.networkService = networkService;
         this.peerIdService = peerIdService;
         this.downloadData = downloadData;
+        this.downloadState = downloadState;
         this.peerMap = new ConcurrentHashMap<>();
-        this.downloadIndexPieceSet = ConcurrentHashMap.newKeySet();
     }
 
     @Override
@@ -135,14 +137,7 @@ public class PeerServiceImpl implements PeerService {
     }
 
     @Override
-    public void downloadPieceIndexes(Collection<Integer> indexes) {
-        downloadIndexPieceSet.clear();
-        downloadIndexPieceSet.addAll(indexes);
-    }
-
-    @Override
     public void pieceDownload(int pieceIndex) {
-        downloadIndexPieceSet.remove(pieceIndex);
         for (var peer : peerMap.values()) {
             if (!interest(peer) && peer.isAmInterested()) {
                 peer.setAmInterested(false);
@@ -171,6 +166,7 @@ public class PeerServiceImpl implements PeerService {
      * Интересен ли пир
      */
     private boolean interest(Peer peer) {
+        var downloadIndexPieceSet = downloadState.needDownloadBlocks().stream().map(Block::getIndex).collect(Collectors.toSet());
         for (var pieceIndex : downloadIndexPieceSet) {
             if (peer.getBitfield().isHave(pieceIndex)) {
                 return true;
