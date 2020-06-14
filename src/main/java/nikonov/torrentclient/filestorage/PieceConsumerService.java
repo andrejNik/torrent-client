@@ -1,6 +1,6 @@
 package nikonov.torrentclient.filestorage;
 
-import nikonov.torrentclient.download.SimpleDownloadService;
+import nikonov.torrentclient.download.simpleservice.SimpleDownloadService;
 
 /**
  * Интерфейс потребителя кусков, полученых от сервиса загрузки {@link SimpleDownloadService}

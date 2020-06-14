@@ -1,4 +1,4 @@
-package nikonov.torrentclient.download.strategy;
+package nikonov.torrentclient.download.simpleservice.strategy;
 
 import nikonov.torrentclient.download.domain.PeerBlockRequest;
 import nikonov.torrentclient.download.domain.peer.Peer;

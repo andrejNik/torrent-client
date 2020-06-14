@@ -1,14 +1,15 @@
-package nikonov.torrentclient.download;
+package nikonov.torrentclient.download.simpleservice;
 
 import com.google.common.hash.Hashing;
 import nikonov.torrentclient.domain.DownloadData;
+import nikonov.torrentclient.download.DownloadService;
 import nikonov.torrentclient.download.domain.Block;
 import nikonov.torrentclient.download.domain.DownloadState;
 import nikonov.torrentclient.download.domain.PeerBlockRequest;
 import nikonov.torrentclient.download.domain.PieceByteBlock;
 import nikonov.torrentclient.download.peer.PeerService;
 import nikonov.torrentclient.download.piececache.PieceCacheService;
-import nikonov.torrentclient.download.strategy.DownloadAlgorithm;
+import nikonov.torrentclient.download.simpleservice.strategy.DownloadAlgorithm;
 import nikonov.torrentclient.filestorage.PieceConsumerService;
 import nikonov.torrentclient.network.NetworkService;
 import nikonov.torrentclient.network.domain.message.*;
