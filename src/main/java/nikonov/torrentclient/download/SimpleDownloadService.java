@@ -23,9 +23,9 @@ import java.util.logging.Logger;
 /**
  * TODO 1. парралельная загрузка и блокировка по индексу куска
  */
-public class DownloadServiceImpl implements DownloadService {
+public class SimpleDownloadService implements DownloadService {
 
-    private static final Logger logger = Logger.getLogger(DownloadServiceImpl.class.getName());
+    private static final Logger logger = Logger.getLogger(SimpleDownloadService.class.getName());
     private static final ResourceBundle resourceBundle = ResourceBundle.getBundle("nikonov.torrentclient.logging.message");
     private static final String THREAD_NAME = "Download-Service-Thread";
 
@@ -41,13 +41,13 @@ public class DownloadServiceImpl implements DownloadService {
      */
     public static final Duration REQUEST_PERIOD = Duration.of(5, ChronoUnit.SECONDS);
 
-    public DownloadServiceImpl(NetworkService networkService,
-                               PieceConsumerService pieceConsumerService,
-                               PeerService peerService,
-                               PieceCacheService pieceCacheService,
-                               DownloadAlgorithm downloadAlgorithm,
-                               DownloadState downloadState,
-                               DownloadData downloadData) {
+    public SimpleDownloadService(NetworkService networkService,
+                                 PieceConsumerService pieceConsumerService,
+                                 PeerService peerService,
+                                 PieceCacheService pieceCacheService,
+                                 DownloadAlgorithm downloadAlgorithm,
+                                 DownloadState downloadState,
+                                 DownloadData downloadData) {
         this.networkService = networkService;
         this.pieceConsumerService = pieceConsumerService;
         this.peerService = peerService;

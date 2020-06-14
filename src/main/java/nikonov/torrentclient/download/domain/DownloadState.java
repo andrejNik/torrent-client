@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class DownloadState {
 
-    public static final int BLOCK_LENGTH = (int) Math.pow(2, 14);
+    public static final int BLOCK_LENGTH = (int) Math.pow(2, 14); // todo вынести в отдельную константу
     private final DownloadData downloadData;
     private final Set<Block> needDownloadSet;
     /**
