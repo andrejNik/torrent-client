@@ -1,0 +1,15 @@
+package nikonov.torrentclient.client.notification.domain;
+
+public enum NotificationType {
+
+    CONNECT,
+    NEW_PEERS_DISCOVER,
+    SEND_REQUEST_MESSAGE,
+    SEND_HANDSHAKE_MESSAGE,
+    RECEIVE_HANDSHAKE_MESSAGE,
+    RECEIVE_CHOKE_MESSAGE,
+    RECEIVE_UNCHOKE_MESSAGE,
+    RECEIVE_PIECE_MESSAGE,
+    PIECE_DOWNLOAD,
+    PIECE_ERROR_DOWNLOAD;
+}
