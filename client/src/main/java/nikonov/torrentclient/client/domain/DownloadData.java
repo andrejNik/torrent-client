@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import nikonov.torrentclient.client.metadata.domain.metadata.Metadata;
+import nikonov.torrentclient.base.metadata.domain.Metadata;
 
 import java.util.Map;
 import java.util.Set;

@@ -1,4 +1,4 @@
-package nikonov.torrentclient.client.metadata.domain;
+package nikonov.torrentclient.base.metadata.domain;
 
 /**
  * Ключи торрент файла

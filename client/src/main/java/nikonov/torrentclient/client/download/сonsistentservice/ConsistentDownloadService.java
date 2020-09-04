@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 /**
  * Сервис с последовательной загрузкой блоков - следующий блок скачивается если получен предыдущий
  * TODO ВЫДЕЛИТЬ АЛГОРИТМ СОЗДАНИЯ/ДОБАВЛЕНИЯ ПРОЦЕССОВ
+ * TODO КЭШ БЛОКОВ
  */
 public class ConsistentDownloadService implements DownloadService {
 

@@ -1,8 +1,7 @@
-package nikonov.torrentclient.client.metadata;
+package nikonov.torrentclient.base.metadata;
 
 import com.google.common.hash.Hashing;
-import nikonov.torrentclient.client.metadata.domain.BencodeItem;
-import nikonov.torrentclient.client.metadata.domain.metadata.*;
+import nikonov.torrentclient.base.metadata.domain.*;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -12,7 +11,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.*;
-import static nikonov.torrentclient.client.metadata.domain.TorrentFileKey.*;
+import static nikonov.torrentclient.base.metadata.domain.TorrentFileKey.*;
 
 public class TorrentFileParser {
 

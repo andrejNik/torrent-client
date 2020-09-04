@@ -1,8 +1,8 @@
 package nikonov.torrentclient.client.trackerclient;
 
 import nikonov.torrentclient.client.domain.PeerAddress;
-import nikonov.torrentclient.client.metadata.BencodeReader;
-import nikonov.torrentclient.client.metadata.domain.BencodeItem;
+import nikonov.torrentclient.base.metadata.BencodeReader;
+import nikonov.torrentclient.base.metadata.domain.BencodeItem;
 import nikonov.torrentclient.client.trackerclient.domain.TrackerRequest;
 import nikonov.torrentclient.client.trackerclient.domain.TrackerResponse;
 

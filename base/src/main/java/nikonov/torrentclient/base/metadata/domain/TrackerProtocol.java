@@ -1,4 +1,4 @@
-package nikonov.torrentclient.client.metadata.domain.metadata;
+package nikonov.torrentclient.base.metadata.domain;
 
 /**
  * Протокол трекера

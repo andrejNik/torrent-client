@@ -1,6 +1,6 @@
 package nikonov.torrentclient.client.util;
 
-import nikonov.torrentclient.client.metadata.domain.metadata.Metadata;
+import nikonov.torrentclient.base.metadata.domain.Metadata;
 
 
 import java.util.Collections;

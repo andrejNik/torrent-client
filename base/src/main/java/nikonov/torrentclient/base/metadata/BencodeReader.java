@@ -1,6 +1,6 @@
-package nikonov.torrentclient.client.metadata;
+package nikonov.torrentclient.base.metadata;
 
-import nikonov.torrentclient.client.metadata.domain.BencodeItem;
+import nikonov.torrentclient.base.metadata.domain.BencodeItem;
 
 import java.nio.charset.Charset;
 import java.util.*;
