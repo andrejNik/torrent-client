@@ -12,6 +12,7 @@
     <modules>
         <module>base</module>
         <module>client</module>
+        <module>gui</module>
     </modules>
 
     <properties>
@@ -32,6 +33,12 @@
             <dependency>
                 <groupId>nikonov</groupId>
                 <artifactId>client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>nikonov</groupId>
+                <artifactId>gui</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

@@ -1,0 +1,165 @@
+.window {
+    -fx-pref-width: 1000;
+    -fx-pref-height: 600;
+}
+
+.torrent-list-panel {
+    -fx-background-color: white;
+    -fx-text-box-border: transparent;
+    -fx-pref-width: 200;
+}
+
+.video-panel {
+    -fx-background-color: black;
+    -fx-pref-height: 380;
+}
+
+/*==================================*/
+
+.display-torrent-panel {
+    -fx-background-color: white;
+}
+
+.display-torrent-head-panel {
+    -fx-text-alignment: center;
+}
+
+.display-torrent-name-label {
+    -fx-font-size: 18;
+    -fx-font-family: monospace;
+    -fx-padding: 4;
+}
+
+.display-torrent-progress-bar {
+    -fx-border-color: gray;
+    -fx-background-color: transparent;
+    -fx-text-box-border: transparent;
+    -fx-control-inner-background: transparent;
+    -fx-accent: #c0c0c0;
+}
+
+.display-torrent-file-tree {
+    -fx-background-color: transparent;
+    -fx-text-box-border: transparent;
+    -fx-pref-height: 200 !important;
+    -fx-pref-width: 400 !important;
+}
+
+.torrent-label {
+    -fx-text-alignment: center;
+    -fx-font-size: 16;
+    -fx-font-family: monospace;
+    -fx-cursor: hand;
+    -fx-border-color: gray;
+    -fx-padding: 5 5 5 5;
+}
+
+.display-torrent-label {
+    -fx-background-color: #c0c0c0;
+}
+
+.add-torrent-label {
+    -fx-cursor: hand;
+    -fx-border-color: gray;
+    -fx-background-color: #c0c0c0;
+    -fx-text-alignment: center;
+    -fx-font-size: 16;
+    -fx-font-family: monospace;
+    -fx-padding: 5 5 5 5;
+}
+
+.tree-leaf-label {
+
+}
+
+.tree-folder-label {
+
+}
+
+.tree-root-folder-label {
+
+}
+
+.tree-button {
+   -fx-pref-width: 18 !important;
+   -fx-min-width: 18 !important;
+   -fx-max-width: 18 !important;
+   -fx-pref-height: 18 !important;
+   -fx-min-height: 18 !important;
+   -fx-max-height: 18 !important;
+   -fx-background-color: transparent;
+   -fx-text-box-border: transparent;
+   -fx-control-inner-background: transparent;
+   -fx-border-width: 0;
+   -fx-border-color: transparent;
+   -fx-font-size: 5;
+   -fx-background-position: left top;
+   -fx-background-repeat: no-repeat;
+   -fx-background-size: cover, auto;
+   -fx-cursor: hand;
+}
+
+
+.inactive-play-button {
+   -fx-background-image: url("../image/inactive-play-button.png");
+}
+
+.active-play-button {
+    -fx-background-image: url("../image/active-play-button.png");
+}
+
+.pause-play-button {
+    -fx-background-image: url("../image/pause-play-button.png");
+}
+
+.inactive-check-button {
+    -fx-background-image: url("../image/x.png");
+}
+
+.active-check-button {
+    -fx-background-image: url("../image/check-mark.png");
+}
+
+.root-folder-button {
+    -fx-background-image: url("../image/root-folder.png");
+}
+
+.tooltip {
+    -fx-background: rgba(30,30,30) !important;
+    -fx-text-fill: white !important;
+    -fx-background-color: rgba(30,30,30,0.8) !important;
+    -fx-background-radius: 6px !important;
+    -fx-background-insets: 0 !important;
+    -fx-padding: 0.667em 0.75em 0.667em 0.75em !important;
+    -fx-effect: dropshadow( three-pass-box , rgba(0,0,0,0.5) , 10, 0.0 , 0 , 3 ) !important;
+    -fx-font-size: 10px !important;
+}
+
+.custom-tree-cell:root .tree-disclosure-node,
+.custom-tree-cell:root .arrow {
+    -fx-min-width: 0;
+    -fx-pref-width: 0;
+    -fx-max-width: 0;
+    -fx-min-height: 0;
+    -fx-pref-height: 0;
+    -fx-max-height: 0;
+}
+
+.torrent-info-panel {
+    -fx-pref-width: 400 !important;
+}
+
+.info-label {
+    -fx-font-size: 16;
+    -fx-border-color: gray;
+    -fx-font-family: monospace;
+    -fx-padding: 5 5 5 5;
+}
+
+.save-button {
+    -fx-cursor: hand;
+    -fx-border-color: gray;
+    -fx-background-color: #c0c0c0;
+    -fx-padding: 7 7 7 7 !important;
+}
+

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.control.TreeView?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane styleClass="window" stylesheets="/nikonov/torrentclient/gui/style/window-style.css"
+            xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
+
+    <left>
+        <VBox fx:id="torrentListPanel" styleClass="torrent-list-panel" spacing="10">
+            <padding>
+                <Insets top="10" left="10" right="5" bottom="1"/>
+            </padding>
+            <Label fx:id="addTorrentLabel" styleClass="add-torrent-label"/>
+        </VBox>
+    </left>
+
+    <center>
+        <VBox fx:id="displayTorrentPanel" styleClass="display-torrent-panel" spacing="5">
+            <padding>
+                <Insets top="10" left="10" right="5"/>
+            </padding>
+            <StackPane fx:id="displayTorrentHeadPanel" styleClass="display-torrent-head-panel">
+                <ProgressBar progress="0.0" fx:id="displayTorrentProgressBar" styleClass="display-torrent-progress-bar"/>
+                <Label styleClass="display-torrent-name-label" fx:id="displayTorrentNameLabel"/>
+            </StackPane>
+            <VBox fx:id="videoPanel" styleClass="video-panel">
+                <ImageView fx:id="videoImageView" styleClass="video-image-view"/>
+            </VBox>
+            <HBox>
+                <TreeView fx:id="displayTorrentFileTree" styleClass="display-torrent-file-tree"/>
+                <VBox fx:id="torrentInfoPanel" styleClass="torrent-info-panel" spacing="5">
+                    <padding>
+                        <Insets left="3" right="3" top="1"/>
+                    </padding>
+                    <Label fx:id="downloadLabel" styleClass="info-label"/>
+                    <Label fx:id="uploadLabel" styleClass="info-label"/>
+                    <Label fx:id="peerLabel" styleClass="info-label"/>
+                    <Label fx:id="activePeerLabel" styleClass="info-label"/>
+                    <Label fx:id="saveButton" styleClass="info-label, save-button"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </center>
+
+</BorderPane>
